@@ -88,8 +88,6 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
 .connecting{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:12px;color:var(--muted);}
 .spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
 .no-session{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:14px;color:var(--muted);text-align:center;padding:20px;}
 .no-session .icon{font-size:3rem;}
 .no-session h2{font-size:1.1rem;font-weight:800;color:var(--ink);}
@@ -207,6 +205,7 @@ function toggleTheme() {
 
 // FIX G: connection monitoring
 onValue(ref(db, '.info/connected'), snap => {
+  if (state?.sessionEnded) return; // preserve ended-state dot
   const dot = document.getElementById('liveDot');
   dot.className = snap.val() ? 'live-dot' : 'live-dot offline';
   dot.title = snap.val() ? 'Connected — Live' : 'Disconnected';
@@ -282,6 +281,13 @@ function showEndedState(s) {
       <div id="vRankings"></div>
     </div>`;
   renderRankings(s);
+  // Sync sort pill active state — pills always render as "wins" after innerHTML swap
+  if (rankSort !== 'wins') {
+    document.querySelectorAll('.sort-pill-v').forEach(p => p.classList.remove('active'));
+    ['wins','points','winpct','ptpct'].forEach((k,i) => {
+      if (k === rankSort) document.querySelectorAll('.sort-pill-v')[i]?.classList.add('active');
+    });
+  }
 }
 
 // FIX A: handle null (admin started new session — clear everything)
@@ -289,6 +295,7 @@ function handleNull() {
   clearTimeout(connectTimeout);
   clearInterval(clockInterval); clockInterval = null;
   clearInterval(timerInterval); timerInterval = null;
+  layoutBuilt = false;
   state = null;
   document.getElementById('viewSessionName').textContent = 'Pickleball Open Play';
   document.getElementById('viewSessionDate').textContent = 'Live View — Read Only';

@@ -862,6 +862,7 @@ input:focus, textarea:focus { border-color: var(--army); }
     <div class="session-info" id="sessionInfo">Session running</div>
   </div>
   <button class="btn-end-session" id="sessionActionBtn" onclick="openEndModal()">End Session</button>
+  <button class="btn-end-session" id="sessionNewBtn" onclick="newSession()" style="display:none;opacity:0.7;font-size:0.68rem;">New Session</button>
 </div>
 
 <div class="tabs" id="mainTabs">
@@ -1244,13 +1245,16 @@ function applySessionUI() {
   const hdr = document.getElementById('headerSessionName');
   if (hdr) hdr.textContent = sessionName || 'Open Play';
   const btn = document.getElementById('sessionActionBtn');
+  const newBtn = document.getElementById('sessionNewBtn');
   if (sessionEnded) {
     bar.classList.add('ended');
-    if (btn) { btn.textContent = 'New Session'; btn.onclick = newSession; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Continue'; btn.onclick = continueSession; btn.disabled = false; }
+    if (newBtn) newBtn.style.display = '';
     clearInterval(sessionTimerInterval); sessionTimerInterval = null;
   } else {
     bar.classList.remove('ended');
     if (btn) { btn.textContent = 'End Session'; btn.onclick = openEndModal; btn.disabled = false; }
+    if (newBtn) newBtn.style.display = 'none';
     if (!sessionTimerInterval) sessionTimerInterval = setInterval(updateSessionClock, 1000);
   }
   updateSessionClock();
@@ -1304,6 +1308,14 @@ function confirmEndSession() {
 function newSession() {
   if (!confirm('Go back to Dashboard to start a new session?')) return;
   window.location.href = 'dashboard.html';
+}
+function continueSession() {
+  if (!confirm('Continue this session? The view link will go live again for players.')) return;
+  sessionEnded = false; sessionEndTime = null;
+  applySessionUI();
+  if (window._fbForceImmediate) window._fbForceImmediate();
+  saveState();
+  showToast('Session continued — view link is live again.');
 }
 
 // ===== COURT TIMERS — derived from startedAt in Firebase =====
@@ -1810,7 +1822,6 @@ function confirmLeave() {
   }
   // Also call on load and after any DOM change
   updateTabOffset();
-  window.addEventListener('resize', updateTabOffset);
 
   // Loading screen hard timeout — if Firebase doesn't respond in 8s show error
   setTimeout(() => {

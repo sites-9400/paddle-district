@@ -225,12 +225,14 @@ function renderSessionList(entries) {
   if (qr) qr.style.display = 'none';
 }
 
+let _unsubSessions = null;
 function loadSessions() {
   const list = document.getElementById('sessionList');
 
   // Strategy 1: Read session IDs from user profile (device-independent)
   const userSessionsRef = ref(db, `users/${currentUser.uid}/sessions`);
-  onValue(userSessionsRef, async snap => {
+  if (_unsubSessions) { _unsubSessions(); _unsubSessions = null; }
+  _unsubSessions = onValue(userSessionsRef, async snap => {
     const userSessions = snap.val();
     if (!userSessions) {
       // Fallback: scan all sessions for ownerId match
@@ -294,7 +296,7 @@ function sessionCard(id, s) {
   ].join('');
   const liveHint = isLive ? '<div style="font-size:0.72rem;font-weight:700;color:var(--army);margin-top:3px;">⚡ Tap to manage</div>' : '';
   const viewHref = basePath + 'view.html?session=' + id;
-  return `<div class="session-card ${isLive?'session-live':''}" onclick="openSession('${id}')">
+  return `<div class="session-card ${isLive?'session-live':''}" data-id="${id}" data-name="${(s.name||'Open Play').replace(/"/g,'&quot;')}" onclick="openSession(this.dataset.id,this.dataset.name)">
     <div class="session-icon">${isLive ? '🟢' : '📋'}</div>
     <div class="session-info">
       <div class="session-name">${s.name||'Open Play'}</div>
@@ -314,10 +316,11 @@ function emptyState() {
   return `<div class="empty-state"><div class="icon">🏸</div><p>No sessions yet.<br>Start one above to get going!</p></div>`;
 }
 
-window.openSession = (id) => {
+window.openSession = (id, name) => {
   const basePath = window.location.pathname.replace(/[^/]*$/, '');
   const url = basePath + 'app.html?session=' + id;
   localStorage.setItem('pd_last_session', url);
+  if (name) localStorage.setItem('pd_last_session_name', name);
   window.location.href = url;
 };
 
