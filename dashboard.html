@@ -139,7 +139,7 @@ let deleteTargetId = null;
 // Auth guard — wait for full resolution before redirecting
 let _authResolved = false;
 onAuthStateChanged(auth, user => {
-  if (user) {
+  if (user && !user.isAnonymous) {
     _authResolved = true;
     currentUser = user;
     const initials = (user.displayName||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);

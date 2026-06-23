@@ -1867,8 +1867,8 @@ const _SESSION_REF = ref(_db, `sessions/${_SESSION_ID}`);
 // Auth guard — wait for full resolution, add grace period for slow connections
 let _authUser = undefined;
 onAuthStateChanged(_auth, user => {
-  _authUser = user;
-  if (user) {
+  _authUser = user && !user.isAnonymous ? user : null;
+  if (_authUser) {
     // Register this session under user profile — device-independent recovery
     if (_SESSION_ID) {
       const userSessionRef = ref(_db, `users/${user.uid}/sessions/${_SESSION_ID}`);
