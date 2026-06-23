@@ -1083,7 +1083,9 @@ function saveState() {
     gameHistory:cleanForFirebase(gameHistory),
     queueOrder: cleanForFirebase(queueOrder),
     globalRound, playerIdCounter, courtIdCounter, mqIdCounter,
-    sessionStartTime, sessionName, sessionEnded, sessionEndTime,
+    sessionStartTime, sessionName,
+    name: sessionName,        // keep 'name' in sync — dashboard reads this field
+    sessionEnded, sessionEndTime,
     status: sessionEnded ? 'ended' : 'active'
   };
   if (window._fbWrite) {
@@ -1153,7 +1155,7 @@ window._fbApplyRemote = function(s) {
   mqIdCounter      = s.mqIdCounter      || 0;
   queueOrder       = normArr(s.queueOrder);
   sessionStartTime = s.sessionStartTime || null;
-  sessionName      = s.sessionName      || '';
+  sessionName      = s.sessionName || s.name || '';
   sessionEnded     = s.sessionEnded     || false;
   sessionEndTime   = s.sessionEndTime   || null;
 
@@ -1854,15 +1856,16 @@ onAuthStateChanged(_auth, user => {
 let _writeTimer = null;
 let _lastWrite = 0;
 window._fbWrite = function(data) {
+  if (data === null) { window._fbSet(null); return; } // null = clear session
   const dot = document.getElementById('syncDot');
   if (dot) dot.className = 'sync-dot syncing';
   clearTimeout(_writeTimer);
   _writeTimer = setTimeout(() => {
-    // Use update() not set() — preserves dashboard fields (ownerId, name, date, createdAt)
+    // update() merges — preserves ownerId, name, date, createdAt set by dashboard
     update(_SESSION_REF, data)
       .then(() => { if(dot) dot.className = 'sync-dot'; })
       .catch(err => {
-        console.error('Firebase write error:', err);
+        console.error('Firebase write error:', err.code, err.message);
         if(dot) dot.className = 'sync-dot error';
       });
   }, 80);
