@@ -208,14 +208,16 @@ function loadSessions() {
       if (banner && liveSessions.length > 0) {
         const [liveId, liveS] = liveSessions[0];
         const basePath = window.location.pathname.replace(/[^/]*$/, '');
+        const resumeUrl = basePath + 'app.html?session=' + liveId;
+        const liveName = (liveS.name || 'Open Play').replace(/</g,'&lt;');
         banner.style.display = '';
-        banner.innerHTML = `<div style="background:var(--army);color:white;border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--shadow);">
-          <div>
-            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:3px;">Active Session</div>
-            <div style="font-size:1rem;font-weight:800;">${liveS.name||'Open Play'}</div>
-          </div>
-          <button onclick="window.location.href='${basePath}app.html?session=${liveId}'" style="background:var(--accent);color:#1C1F14;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:0.85rem;font-weight:800;cursor:pointer;white-space:nowrap;letter-spacing:0.02em;">▶ Resume</button>
-        </div>`;
+        banner.innerHTML = '<div style="background:var(--army);color:white;border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--shadow);">'
+          + '<div>'
+          + '<div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:3px;">Active Session</div>'
+          + '<div style="font-size:1rem;font-weight:800;">' + liveName + '</div>'
+          + '</div>'
+          + '<button onclick="window.location.href='' + resumeUrl + ''" style="background:var(--accent);color:#1C1F14;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:0.85rem;font-weight:800;cursor:pointer;white-space:nowrap;">&#9654; Resume</button>'
+          + '</div>';
       } else if (banner) {
         banner.style.display = 'none';
       }
@@ -246,15 +248,22 @@ function sessionCard(id, s) {
     : Array.isArray(plRaw) ? plRaw.length
     : Object.keys(plRaw).filter(k=>k!=='_empty').length;
   const basePath = window.location.pathname.replace(/[^/]*$/, '');
+  const meta = [
+    date,
+    gameCount ? ` · ${gameCount} game${gameCount!==1?'s':''}` : '',
+    playerCount ? ` · ${playerCount} player${playerCount!==1?'s':''}` : ''
+  ].join('');
+  const liveHint = isLive ? '<div style="font-size:0.72rem;font-weight:700;color:var(--army);margin-top:3px;">⚡ Tap to manage</div>' : '';
+  const viewHref = basePath + 'view.html?session=' + id;
   return `<div class="session-card ${isLive?'session-live':''}" onclick="openSession('${id}')">
     <div class="session-icon">${isLive ? '🟢' : '📋'}</div>
     <div class="session-info">
       <div class="session-name">${s.name||'Open Play'}</div>
-      <div class="session-meta">${date}${gameCount ? \` · \${gameCount} game\${gameCount!==1?'s':''}\` : ''}${playerCount ? \` · \${playerCount} player\${playerCount!==1?'s':''}\` : ''}</div>
-      ${isLive ? \`<div style="font-size:0.72rem;font-weight:700;color:var(--army);margin-top:3px;">⚡ Tap to manage</div>\` : ''}
+      <div class="session-meta">${meta}</div>
+      ${liveHint}
     </div>
     <div class="session-actions" onclick="event.stopPropagation()">
-      <a href="\${basePath}view.html?session=${id}" target="_blank" class="btn btn-outline btn-sm">👁 View</a>
+      <a href="${viewHref}" target="_blank" class="btn btn-outline btn-sm">👁 View</a>
       <button class="btn btn-outline btn-sm" onclick="promptDelete('${id}')">🗑</button>
     </div>
     <span class="badge ${isLive?'badge-live':'badge-ended'}">${isLive?'Live':'Ended'}</span>
