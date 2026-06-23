@@ -1176,14 +1176,15 @@ window._fbApplyRemote = function(s) {
     if (el) { el.value = val; }
   });
 
-  // Show share card
-  if (window._getViewLink && typeof showShareCard !== 'undefined') {
-    showShareCard(window._getViewLink());
-  }
-
   // Hide loading screen
   const ls = document.getElementById('loadingScreen');
   if (ls) ls.classList.add('hidden');
+
+  // Show share card — always show on every load/resume
+  if (window._getViewLink) {
+    const lnk = window._getViewLink();
+    if (lnk && typeof showShareCard !== 'undefined') showShareCard(lnk);
+  }
 };
 
 // Called when Firebase node is null (session deleted / new session)
@@ -1810,7 +1811,7 @@ function confirmLeave() {
 <!-- Firebase Session Sync -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1857,10 +1858,18 @@ window._fbWrite = function(data) {
   if (dot) dot.className = 'sync-dot syncing';
   clearTimeout(_writeTimer);
   _writeTimer = setTimeout(() => {
-    set(_SESSION_REF, data)
+    // Use update() not set() — preserves dashboard fields (ownerId, name, date, createdAt)
+    update(_SESSION_REF, data)
       .then(() => { if(dot) dot.className = 'sync-dot'; })
-      .catch(() => { if(dot) dot.className = 'sync-dot error'; });
+      .catch(err => {
+        console.error('Firebase write error:', err);
+        if(dot) dot.className = 'sync-dot error';
+      });
   }, 80);
+};
+// Full overwrite — only used for null (clear session)
+window._fbSet = function(data) {
+  set(_SESSION_REF, data).catch(err => console.error('Firebase set error:', err));
 };
 window._fbMarkWrite = () => { _lastWrite = Date.now(); };
 window._fbIgnoreNext = () => { _lastWrite = Date.now(); };
