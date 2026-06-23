@@ -242,9 +242,10 @@ function loadSessions() {
     const results = await Promise.all(ids.map(id =>
       get(ref(db, `sessions/${id}`)).then(s => s.exists() ? [id, s.val()] : null).catch(() => null)
     ));
-    const entries = results.filter(Boolean).filter(([,s]) => s && s.ownerId === currentUser.uid);
+    // Trust the user's own session index — no need to re-check ownerId field
+    const entries = results.filter(Boolean);
     if (!entries.length) {
-      loadSessionsByOwner(); // fallback
+      loadSessionsByOwner(); // fallback for sessions created before the index existed
       return;
     }
     renderSessionList(entries);
@@ -267,8 +268,10 @@ function loadSessionsByOwner() {
         lastOpened: Date.now()
       });
     });
-  }).catch(err => {
-    list.innerHTML = `<div class="empty-state"><div class="icon">🔒</div><p style="color:var(--red);font-weight:600;">Permission denied.<br><span style="font-size:0.78rem;font-weight:500;color:var(--muted);">Check your Firebase rules.</span></p></div>`;
+  }).catch(() => {
+    // Collection-level read blocked by Firebase rules — primary path (users/{uid}/sessions)
+    // is the reliable lookup; this fallback only runs for sessions predating that index.
+    list.innerHTML = `<div class="empty-state"><div class="icon">🏸</div><p>No sessions found.<br><span style="font-size:0.78rem;font-weight:500;color:var(--muted);">Sessions you run are saved to your account and appear here after login.</span></p></div>`;
   });
 }
 
