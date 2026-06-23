@@ -146,8 +146,15 @@ onAuthStateChanged(auth, user => {
     document.getElementById('userAvatar').textContent = initials;
     document.getElementById('userName').textContent = user.displayName || user.email;
     loadSessions();
+  } else if (user && user.isAnonymous) {
+    // Stale anonymous session in the default app (left over from before view.html
+    // was isolated to its own named app instance). Sign it out immediately so
+    // index.html shows the login form instead of bouncing back here.
+    signOut(auth).then(() => {
+      window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
+    });
   } else {
-    // Give Firebase 3 seconds to resolve before redirecting to login
+    // No user yet — give Firebase 3 seconds to resolve before redirecting
     setTimeout(() => {
       if (!_authResolved) {
         window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'index.html';

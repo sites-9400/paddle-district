@@ -144,9 +144,9 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
-// If already logged in, go straight to dashboard
+// If already logged in with a real account, go straight to dashboard
 onAuthStateChanged(auth, user => {
-  if (user) window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'dashboard.html';
+  if (user && !user.isAnonymous) window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'dashboard.html';
 });
 
 async function ensureUserProfile(user) {
