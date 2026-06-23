@@ -789,11 +789,11 @@ input:focus, textarea:focus { border-color: var(--army); }
 /* SHARE CARD */
 .share-card{background:var(--army);color:white;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);}
 .share-card-title{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:12px;}
-.share-inner{display:flex;gap:16px;align-items:center;}
-.qr-box{background:white;border-radius:8px;padding:0;flex-shrink:0;display:block;width:100px;height:100px;overflow:hidden;line-height:0;}
-.share-right{flex:1;min-width:0;}
+
+
+
 .share-link-label{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;}
-.share-link-box{background:rgba(0,0,0,0.2);border-radius:6px;padding:8px 10px;font-size:0.72rem;font-weight:600;word-break:break-all;letter-spacing:0.01em;line-height:1.5;margin-bottom:10px;cursor:pointer;transition:background 0.15s;}
+.share-link-box{background:rgba(0,0,0,0.2);border-radius:6px;padding:10px 12px;font-size:0.75rem;font-weight:600;word-break:break-all;letter-spacing:0.01em;line-height:1.5;margin-bottom:10px;cursor:pointer;transition:background 0.15s;}
 .share-link-box:hover{background:rgba(0,0,0,0.3);}
 .share-btns{display:flex;gap:6px;flex-wrap:wrap;}
 .share-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:6px;padding:7px 12px;font-family:var(--font);font-size:0.75rem;font-weight:700;letter-spacing:0.03em;cursor:pointer;transition:background 0.15s;white-space:nowrap;}
@@ -884,16 +884,10 @@ input:focus, textarea:focus { border-color: var(--army); }
     <!-- SHARE CARD — always visible once session is active -->
     <div class="share-card" id="shareCard" style="display:none;">
       <div class="share-card-title">Share with Players</div>
-      <div class="share-inner">
-        <div class="qr-box"><canvas id="qrCanvas" width="100" height="100" style="width:100px;height:100px;display:block;"></canvas></div>
-        <div class="share-right">
-          <div class="share-link-label">View Link</div>
-          <div class="share-link-box" id="shareLinkDisplay" onclick="copyViewLink()">Generating...</div>
-          <div class="share-btns">
-            <button class="share-btn" onclick="copyViewLink()">📋 Copy Link</button>
-            <button class="share-btn" onclick="downloadQR()">⬇ Save QR</button>
-          </div>
-        </div>
+      <div class="share-link-label">View Link</div>
+      <div class="share-link-box" id="shareLinkDisplay" onclick="copyViewLink()">Generating...</div>
+      <div class="share-btns">
+        <button class="share-btn" onclick="copyViewLink()">📋 Copy Link</button>
       </div>
     </div>
 
@@ -1931,28 +1925,13 @@ console.log('Firebase session:', _SESSION_ID);
 
 
 <!-- QR Code library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
-function generateQR(url) {
-  const canvas = document.getElementById('qrCanvas');
-  if (!canvas || typeof QRious === 'undefined') return;
-  new QRious({ element: canvas, value: url, size: 100, background: 'white', foreground: '#2A3A18', padding: 0, level: 'M' }); canvas.style.width='100px'; canvas.style.height='100px';
-}
-function downloadQR() {
-  const canvas = document.getElementById('qrCanvas');
-  if (!canvas) return;
-  const a = document.createElement('a');
-  a.download = 'paddle-district-view-qr.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
-}
 function showShareCard(url) {
   const card = document.getElementById('shareCard');
   const display = document.getElementById('shareLinkDisplay');
   if (!card || !display) return;
   card.style.display = '';
   display.textContent = url;
-  setTimeout(() => generateQR(url), 100); // wait for QRious to load
 }
 </script>
 </body>

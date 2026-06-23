@@ -192,7 +192,13 @@ function loadSessions() {
     const all = snap.val();
     if (!all) { list.innerHTML = emptyState(); return; }
     try {
-      const mine = Object.entries(all)
+      const allEntries = Object.entries(all);
+      console.log('[Dashboard] Total sessions in Firebase:', allEntries.length);
+      console.log('[Dashboard] Current user UID:', currentUser.uid);
+      allEntries.forEach(([id, s]) => {
+        console.log('[Dashboard] Session', id, '| ownerId:', s.ownerId, '| match:', s.ownerId === currentUser.uid);
+      });
+      const mine = allEntries
         .filter(([,s]) => s && s.ownerId === currentUser.uid)
         .sort(([,a],[,b]) => (b.createdAt||0) - (a.createdAt||0));
       if (!mine.length) { list.innerHTML = emptyState(); return; }
