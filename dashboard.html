@@ -219,6 +219,8 @@ function renderSessionList(entries) {
     localStorage.setItem('pd_last_session_name', liveName);
   } else if (banner) {
     banner.style.display = 'none';
+    localStorage.removeItem('pd_last_session');
+    localStorage.removeItem('pd_last_session_name');
   }
   if (qr) qr.style.display = 'none';
 }

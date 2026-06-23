@@ -94,6 +94,14 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
 .no-session .icon{font-size:3rem;}
 .no-session h2{font-size:1.1rem;font-weight:800;color:var(--ink);}
 .no-session p{font-size:0.85rem;font-weight:500;max-width:260px;line-height:1.6;}
+.ended-banner{background:var(--surface);border-radius:12px;padding:22px 16px;text-align:center;border:1px solid var(--line);margin-bottom:16px;}
+.ended-banner-icon{font-size:2.2rem;margin-bottom:8px;}
+.ended-banner-title{font-size:1.05rem;font-weight:800;letter-spacing:0.02em;margin-bottom:3px;}
+.ended-banner-sub{font-size:0.8rem;font-weight:500;color:var(--muted);}
+.ended-stats{display:flex;gap:10px;margin-bottom:16px;}
+.ended-stat{flex:1;background:var(--surface);border-radius:10px;padding:13px 8px;text-align:center;border:1px solid var(--line);}
+.ended-stat-val{font-size:1.1rem;font-weight:800;}
+.ended-stat-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-top:3px;}
 </style>
 </head>
 <body>
@@ -206,7 +214,6 @@ onValue(ref(db, '.info/connected'), snap => {
 
 function renderAll(s) {
   clearTimeout(connectTimeout);
-  // Deep-normalize arrays before use — create a clean copy
   const ns = {
     ...s,
     players:    normArr(s.players),
@@ -217,28 +224,64 @@ function renderAll(s) {
     queueOrder: normArr(s.queueOrder),
   };
   state = ns;
-  s = ns; // use normalized copy for all rendering
+  s = ns;
   document.getElementById('viewSessionName').textContent = s.sessionName || 'Paddle District';
+  if (s.sessionEnded) { showEndedState(s); return; }
   if (s.sessionStartTime) {
     const d = new Date(s.sessionStartTime);
     document.getElementById('viewSessionDate').textContent =
-      d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'}) +
-      (s.sessionEnded ? ' · Ended' : ' · Live');
-    // FIX B: clear before setting
+      d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'}) + ' · Live';
     clearInterval(clockInterval);
     clockInterval = setInterval(() => {
       const el = document.getElementById('viewClock');
-      if (el) el.textContent = fmt((s.sessionEnded ? s.sessionEndTime : Date.now()) - s.sessionStartTime);
+      if (el) el.textContent = fmt(Date.now() - s.sessionStartTime);
     }, 1000);
-    document.getElementById('viewClock').textContent = fmt((s.sessionEnded?s.sessionEndTime:Date.now())-s.sessionStartTime);
+    document.getElementById('viewClock').textContent = fmt(Date.now() - s.sessionStartTime);
   }
   ensureLayout();
   renderCourts(s);
   renderQueue(s);
   renderRankings(s);
-  // FIX B: clear before setting
   clearInterval(timerInterval);
   timerInterval = setInterval(() => tickTimers(s), 1000);
+}
+
+function showEndedState(s) {
+  clearInterval(clockInterval); clockInterval = null;
+  clearInterval(timerInterval); timerInterval = null;
+  layoutBuilt = false;
+  const dot = document.getElementById('liveDot');
+  if (dot) { dot.className = 'live-dot offline'; dot.title = 'Session Ended'; }
+  const d = s.sessionStartTime ? new Date(s.sessionStartTime) : null;
+  const dateStr = d ? d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'}) : '';
+  document.getElementById('viewSessionDate').textContent = dateStr + ' · Ended';
+  const finalTime = (s.sessionStartTime && s.sessionEndTime) ? fmt(s.sessionEndTime - s.sessionStartTime) : '--:--:--';
+  document.getElementById('viewClock').textContent = finalTime;
+  const players = s.players || [];
+  const gh = s.gameHistory || [];
+  const activePlayers = players.filter(p => p.gamesPlayed > 0).length;
+  document.getElementById('mainContent').innerHTML = `
+    <div class="ended-banner">
+      <div class="ended-banner-icon">🏁</div>
+      <div class="ended-banner-title">Session Complete</div>
+      <div class="ended-banner-sub">${s.sessionName || 'Open Play'}</div>
+    </div>
+    <div class="ended-stats">
+      <div class="ended-stat"><div class="ended-stat-val">${finalTime}</div><div class="ended-stat-label">Duration</div></div>
+      <div class="ended-stat"><div class="ended-stat-val">${gh.length}</div><div class="ended-stat-label">Games</div></div>
+      <div class="ended-stat"><div class="ended-stat-val">${activePlayers}</div><div class="ended-stat-label">Players</div></div>
+    </div>
+    <div class="section-header">🏆 Final Standings</div>
+    <div class="card-v">
+      <div class="sort-pills-v">
+        <button class="sort-pill-v active" onclick="setSort('wins')">By Wins</button>
+        <button class="sort-pill-v" onclick="setSort('points')">By Points</button>
+        <button class="sort-pill-v" onclick="setSort('winpct')">By Win%</button>
+        <button class="sort-pill-v" onclick="setSort('ptpct')">By Pt%</button>
+      </div>
+      <div id="vRankings"></div>
+    </div>`;
+  renderRankings(s);
 }
 
 // FIX A: handle null (admin started new session — clear everything)
