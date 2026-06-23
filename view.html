@@ -410,28 +410,9 @@ function renderQueue(s) {
   const playingIds = new Set();
   (s.courts||[]).filter(c=>!c.submitted).forEach(c=>[...c.team1,...c.team2].forEach(id=>playingIds.add(id)));
   const mqIds = new Set(); mq.forEach(m=>[...m.team1,...m.team2].forEach(id=>mqIds.add(id)));
-  const playing = present.filter(p=>playingIds.has(p.id));
   const freeWaiting = present.filter(p=>!playingIds.has(p.id)&&!mqIds.has(p.id));
 
   let html='';
-
-  // Now Playing
-  if(playing.length){
-    html+=`<div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#8FB339;margin-bottom:8px;">🏸 Now Playing</div>`;
-    (s.courts||[]).filter(c=>!c.submitted).forEach(c=>{
-      const t1=c.team1.map(id=>(s.players||[]).find(p=>p.id===id));
-      const t2=c.team2.map(id=>(s.players||[]).find(p=>p.id===id));
-      html+=`<div class="mq-card-v" style="border-color:#4A5C2F;margin-bottom:8px;">
-        <div class="mq-header-v"><span class="mq-label-v">${c.name||'Court '+c.id}</span><span class="mq-badge-v mq-badge-next-v" style="background:rgba(143,179,57,0.2);color:#8FB339;border:1px solid rgba(143,179,57,0.3);">Live</span></div>
-        <div class="mq-teams-v">
-          <div class="mq-team-v">${t1.map(p=>`<div class="mq-player-v"><span class="player-chip-avatar" style="background:${avatarColor(p?.name||'?')};">${initials(p?.name||'?')}</span><span class="mq-name-v">${p?.name||'?'}</span></div>`).join('')}</div>
-          <div class="mq-vs-v">VS</div>
-          <div class="mq-team-v">${t2.map(p=>`<div class="mq-player-v"><span class="player-chip-avatar" style="background:${avatarColor(p?.name||'?')};">${initials(p?.name||'?')}</span><span class="mq-name-v">${p?.name||'?'}</span></div>`).join('')}</div>
-        </div>
-      </div>`;
-    });
-    html+=`<div style="height:1px;background:var(--line);margin:10px 0;"></div>`;
-  }
 
   // Upcoming Matches
   if(mq.length){
