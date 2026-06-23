@@ -1307,8 +1307,6 @@ function confirmEndSession() {
 }
 function newSession() {
   if (!confirm('Go back to Dashboard to start a new session?')) return;
-  localStorage.removeItem('pd_last_session');
-  localStorage.removeItem('pd_last_session_name');
   window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'dashboard.html';
 }
 function continueSession() {

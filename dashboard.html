@@ -93,7 +93,6 @@ input:focus{border-color:var(--army);}
   </div>
 
   <div id="liveSessionBanner" style="display:none;margin-bottom:16px;"></div>
-  <div id="quickResumeBanner" style="display:none;margin-bottom:16px;"></div>
   <div class="section-title">My Sessions</div>
   <div id="sessionList">
     <div class="skeleton" style="height:70px;margin-bottom:10px;"></div>
@@ -190,8 +189,6 @@ window.createSession = async () => {
   document.getElementById('newSessionName').value = '';
   showToast('Session created!');
   const _appUrl = window.location.pathname.replace(/[^/]*$/, '') + 'app.html?session=' + sessionId;
-  localStorage.setItem('pd_last_session', _appUrl);
-  localStorage.setItem('pd_last_session_name', name);
   window.location.href = _appUrl;
 };
 
@@ -203,7 +200,6 @@ function renderSessionList(entries) {
   // Live session resume banner
   const live = sorted.find(([,s]) => !s.sessionEnded && s.status !== 'ended');
   const banner = document.getElementById('liveSessionBanner');
-  const qr = document.getElementById('quickResumeBanner');
   if (banner && live) {
     const [liveId, liveS] = live;
     const basePath = window.location.pathname.replace(/[^/]*$/, '');
@@ -215,14 +211,9 @@ function renderSessionList(entries) {
       + '<div style="font-size:1rem;font-weight:800;">' + liveName + '</div></div>'
       + '<button onclick="window.location.href=this.dataset.url" data-url="' + resumeUrl + '" style="background:var(--accent);color:#1C1F14;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:0.85rem;font-weight:800;cursor:pointer;white-space:nowrap;">&#9654; Resume</button>'
       + '</div>';
-    localStorage.setItem('pd_last_session', resumeUrl);
-    localStorage.setItem('pd_last_session_name', liveName);
   } else if (banner) {
     banner.style.display = 'none';
-    localStorage.removeItem('pd_last_session');
-    localStorage.removeItem('pd_last_session_name');
   }
-  if (qr) qr.style.display = 'none';
 }
 
 let _unsubSessions = null;
@@ -296,7 +287,7 @@ function sessionCard(id, s) {
   ].join('');
   const liveHint = isLive ? '<div style="font-size:0.72rem;font-weight:700;color:var(--army);margin-top:3px;">⚡ Tap to manage</div>' : '';
   const viewHref = basePath + 'view.html?session=' + id;
-  return `<div class="session-card ${isLive?'session-live':''}" data-id="${id}" data-name="${(s.name||'Open Play').replace(/"/g,'&quot;')}" onclick="openSession(this.dataset.id,this.dataset.name)">
+  return `<div class="session-card ${isLive?'session-live':''}" data-id="${id}" onclick="openSession(this.dataset.id)">
     <div class="session-icon">${isLive ? '🟢' : '📋'}</div>
     <div class="session-info">
       <div class="session-name">${s.name||'Open Play'}</div>
@@ -316,12 +307,9 @@ function emptyState() {
   return `<div class="empty-state"><div class="icon">🏸</div><p>No sessions yet.<br>Start one above to get going!</p></div>`;
 }
 
-window.openSession = (id, name) => {
+window.openSession = (id) => {
   const basePath = window.location.pathname.replace(/[^/]*$/, '');
-  const url = basePath + 'app.html?session=' + id;
-  localStorage.setItem('pd_last_session', url);
-  if (name) localStorage.setItem('pd_last_session_name', name);
-  window.location.href = url;
+  window.location.href = basePath + 'app.html?session=' + id;
 };
 
 window.promptDelete = (id) => {
@@ -350,22 +338,6 @@ function showToast(msg) {
 </script>
 
 <script>
-// Show last session resume button immediately from localStorage
-(function() {
-  const lastUrl = localStorage.getItem('pd_last_session');
-  if (!lastUrl) return;
-  const banner = document.getElementById('quickResumeBanner');
-  if (!banner) return;
-  const lastName = localStorage.getItem('pd_last_session_name') || 'Last Session';
-  banner.style.display = '';
-  banner.innerHTML = '<div style="background:var(--army);color:white;border-radius:10px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
-    + '<div>'
-    + '<div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:3px;">Last Session</div>'
-    + '<div style="font-size:1rem;font-weight:800;">' + lastName + '</div>'
-    + '</div>'
-    + '<button onclick="window.location.href=this.dataset.url" data-url="' + lastUrl + '" style="background:var(--accent);color:#1C1F14;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:0.85rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">&#9654; Resume</button>'
-    + '</div>';
-})();
 
 function toggleTheme() {
   const html = document.documentElement;
