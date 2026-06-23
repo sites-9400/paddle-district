@@ -167,8 +167,10 @@ header h1 {
   background: var(--surface);
   border-bottom: 2px solid var(--line);
   position: sticky;
-  top: 64px;
+  top: 64px; /* updated by updateTabOffset() when session bar shows */
   z-index: 90;
+  transition: top 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 .tab-btn {
   flex: 1;
@@ -788,7 +790,7 @@ input:focus, textarea:focus { border-color: var(--army); }
 .share-card{background:var(--army);color:white;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);}
 .share-card-title{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:12px;}
 .share-inner{display:flex;gap:16px;align-items:flex-start;}
-.qr-box{background:white;border-radius:8px;padding:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:112px;height:112px;}
+.qr-box{background:white;border-radius:8px;padding:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:108px;height:108px;overflow:hidden;}
 .share-right{flex:1;min-width:0;}
 .share-link-label{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;}
 .share-link-box{background:rgba(0,0,0,0.2);border-radius:6px;padding:8px 10px;font-size:0.72rem;font-weight:600;word-break:break-all;letter-spacing:0.01em;line-height:1.5;margin-bottom:10px;cursor:pointer;transition:background 0.15s;}
@@ -883,7 +885,7 @@ input:focus, textarea:focus { border-color: var(--army); }
     <div class="share-card" id="shareCard" style="display:none;">
       <div class="share-card-title">Share with Players</div>
       <div class="share-inner">
-        <div class="qr-box"><canvas id="qrCanvas" width="100" height="100" style="width:100px;height:100px;display:block;"></canvas></div>
+        <div class="qr-box"><canvas id="qrCanvas" width="100" height="100" style="width:100px;height:100px;display:block;flex-shrink:0;"></canvas></div>
         <div class="share-right">
           <div class="share-link-label">View Link</div>
           <div class="share-link-box" id="shareLinkDisplay" onclick="copyViewLink()">Generating...</div>
@@ -1242,9 +1244,15 @@ function updateSessionClock() {
 }
 function updateTabOffset() {
   const barEl = document.getElementById('sessionBar');
-  const barH = barEl.classList.contains('hidden') ? 0 : barEl.offsetHeight;
+  const barH = barEl ? (barEl.classList.contains('hidden') ? 0 : barEl.offsetHeight) : 0;
   const tabs = document.getElementById('mainTabs');
-  if (tabs) tabs.style.top = (64 + barH) + 'px';
+  const headerH = 64;
+  const totalH = headerH + barH;
+  if (tabs) tabs.style.top = totalH + 'px';
+  // Also update container top padding so content isn't hidden under sticky elements
+  // The tab bar itself is ~48px tall
+  const container = document.querySelector('.container');
+  if (container) container.style.paddingTop = '0px';
 }
 function startSession() {
   // Only used if app is opened directly without a dashboard-created session.
@@ -1809,7 +1817,7 @@ const _auth = getAuth(_app);
 
 const _urlParams = new URLSearchParams(window.location.search);
 const _SESSION_ID = _urlParams.get('session');
-console.log('[PD] Firebase module loaded. Session ID:', _SESSION_ID, '| URL:', window.location.href);
+// console.log('[PD] Firebase module loaded');
 if (!_SESSION_ID) window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'dashboard.html';
 
 const _SESSION_REF = ref(_db, `sessions/${_SESSION_ID}`);
@@ -1817,12 +1825,12 @@ const _SESSION_REF = ref(_db, `sessions/${_SESSION_ID}`);
 // Auth guard — wait for full resolution, add grace period for slow connections
 let _authUser = undefined;
 onAuthStateChanged(_auth, user => {
-  console.log('[PD] Auth state changed. User:', user ? user.email : 'null');
+  // console.log('[PD] Auth state');
   _authUser = user;
   if (!user) {
     setTimeout(() => {
       if (!_authUser) {
-        console.log('[PD] No user after 3s — redirecting to login');
+
         window.location.href = window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
       }
     }, 3000);
@@ -1847,26 +1855,25 @@ window._fbIgnoreNext = () => { _lastWrite = Date.now(); };
 
 // Listen for remote changes
 let _firstLoad = true;
-console.log('[PD] Setting up onValue listener for session:', _SESSION_ID);
+// console.log('[PD] Setting up onValue listener');
 onValue(_SESSION_REF, (snapshot) => {
   const data = snapshot.val();
-  console.log('[PD] onValue fired. data:', data ? 'EXISTS' : 'NULL', '| _firstLoad:', _firstLoad);
+  // console.log('[PD] onValue fired');
   const age = Date.now() - _lastWrite;
   if (!_firstLoad && age < 1000) {
-    console.log('[PD] Echo suppressed (age:', age, 'ms)');
-    return;
+    return; // echo suppressed
   }
   _firstLoad = false;
   if (data && window._fbApplyRemote) {
-    console.log('[PD] Calling _fbApplyRemote...');
+
     window._fbApplyRemote(data);
     if (window._onShareCardReady) window._onShareCardReady();
   } else if (data === null && window._fbHandleNull) {
-    console.log('[PD] Calling _fbHandleNull...');
+
     window._fbHandleNull();
   }
 }, (error) => {
-  console.error('[PD] onValue ERROR:', error.code, error.message);
+  console.error('Firebase connection error:', error.code, error.message);
   const ls = document.getElementById('loadingScreen');
   const lbl = document.getElementById('loadingLabel');
   if (lbl) lbl.textContent = 'Firebase error: ' + error.message + ' — Check console.';
@@ -1929,7 +1936,7 @@ console.log('Firebase session:', _SESSION_ID);
 function generateQR(url) {
   const canvas = document.getElementById('qrCanvas');
   if (!canvas || typeof QRious === 'undefined') return;
-  new QRious({ element: canvas, value: url, size: 100, background: 'white', foreground: '#2A3A18', padding: 2, level: 'M' });
+  new QRious({ element: canvas, value: url, size: 100, background: 'white', foreground: '#2A3A18', padding: 1, level: 'M' });
 }
 function downloadQR() {
   const canvas = document.getElementById('qrCanvas');
