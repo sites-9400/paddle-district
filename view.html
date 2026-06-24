@@ -69,6 +69,9 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
 .history-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:0.64rem;font-weight:800;letter-spacing:0.04em;margin-top:5px;}
 .history-badge.win{background:rgba(212,160,23,0.15);color:var(--gold);}
 .history-badge.tie{background:var(--surface2);color:var(--muted);}
+.history-search{width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 13px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-family:var(--font);font-size:0.85rem;font-weight:500;outline:none;}
+.history-search:focus{border-color:var(--army-light);}
+.history-search::placeholder{color:var(--muted);}
 .rank-medal{font-weight:800;font-size:0.88rem;color:var(--muted);}
 .rank-1 .rank-medal{color:#B8900D;}
 .rank-2 .rank-medal{color:#7A8070;}
@@ -311,6 +314,7 @@ function showEndedState(s) {
       <div id="vRankings"></div>
     </div>
     <div class="section-header">📋 Match History</div>
+    <input type="text" id="historySearch" class="history-search" placeholder="🔍 Search by player name…" oninput="searchHistory()" autocomplete="off">
     <div class="card-v" id="vHistory"></div>`;
   renderRankings(s);
   renderHistory(s);
@@ -371,6 +375,7 @@ function ensureLayout() {
       <div id="vRankings"></div>
     </div>
     <div class="section-header">📋 Match History</div>
+    <input type="text" id="historySearch" class="history-search" placeholder="🔍 Search by player name…" oninput="searchHistory()" autocomplete="off">
     <div class="card-v" id="vHistory"></div>`;
 }
 
@@ -510,8 +515,16 @@ function renderHistory(s) {
   const el=document.getElementById('vHistory');
   if(!el) return;
   const gh=s.gameHistory||[];
+  // Search input is the single source of truth for the query (no separate state to desync).
+  const search=document.getElementById('historySearch');
+  if(search) search.style.display = gh.length ? '' : 'none';
   if(!gh.length){el.innerHTML='<div class="empty-v"><div class="icon">📋</div>No games played yet.</div>';return;}
-  el.innerHTML=gh.map(g=>{
+  const q=(search?.value||'').trim().toLowerCase();
+  const games = q
+    ? gh.filter(g=>[...(g.team1||[]),...(g.team2||[])].some(n=>(n||'').toLowerCase().includes(q)))
+    : gh;
+  if(!games.length){el.innerHTML='<div class="empty-v"><div class="icon">🔍</div>No games match that name.</div>';return;}
+  el.innerHTML=games.map(g=>{
     const t1=(g.team1||[]).join(' & '), t2=(g.team2||[]).join(' & ');
     const winner=g.score1>g.score2?t1:g.score2>g.score1?t2:null;
     return `<div class="history-view-item">
@@ -524,6 +537,7 @@ function renderHistory(s) {
     </div>`;
   }).join('');
 }
+window.searchHistory = function() { if (state) renderHistory(state); };
 
 // Firebase listener
 // Get session from URL
