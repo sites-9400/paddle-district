@@ -359,14 +359,14 @@ input:focus, textarea:focus { border-color: var(--army); }
   gap: 10px;
 }
 .court-label {
-  font-size: 1rem;
+  font-size: 1.3rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   flex: 1;
 }
 .court-name-input {
   font-family: var(--font);
-  font-size: 1rem;
+  font-size: 1.3rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   background: rgba(255,255,255,0.15);
@@ -440,8 +440,15 @@ input:focus, textarea:focus { border-color: var(--army); }
   margin-bottom: 5px;
 }
 .team-player-row:last-child { margin-bottom: 0; }
+.player-bullet {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--army-light);
+  flex-shrink: 0;
+}
 .team-player-name {
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--ink);
@@ -797,6 +804,11 @@ input:focus, textarea:focus { border-color: var(--army); }
 /* SHARE CARD */
 .share-card{background:var(--army);color:white;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;z-index:1;}
 .share-card-title{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:12px;}
+.share-card.compact{display:flex;align-items:center;gap:14px;padding:14px;}
+.share-card.compact .qr-box{background:#fff;border-radius:8px;padding:6px;line-height:0;flex-shrink:0;}
+.share-card.compact .share-compact-body{min-width:0;flex:1;}
+.share-card.compact .share-card-title{margin-bottom:8px;}
+.share-card.compact .share-link-box{margin-bottom:0;}
 
 
 
@@ -940,6 +952,13 @@ input:focus, textarea:focus { border-color: var(--army); }
 
   <!-- COURTS TAB -->
   <div class="tab-panel" id="tab-courts">
+    <div class="share-card compact" id="shareCardCourts" style="display:none;">
+      <div class="qr-box"><div id="qrContainerCourts"></div></div>
+      <div class="share-compact-body">
+        <div class="share-card-title">Scan to view live</div>
+        <div class="share-link-box" id="shareLinkDisplayCourts" onclick="copyViewLink()">Generating...</div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">Courts</div>
       <div class="input-row">
@@ -953,6 +972,13 @@ input:focus, textarea:focus { border-color: var(--army); }
 
   <!-- QUEUE TAB -->
   <div class="tab-panel" id="tab-queue">
+    <div class="share-card compact" id="shareCardQueue" style="display:none;">
+      <div class="qr-box"><div id="qrContainerQueue"></div></div>
+      <div class="share-compact-body">
+        <div class="share-card-title">Scan to view live</div>
+        <div class="share-link-box" id="shareLinkDisplayQueue" onclick="copyViewLink()">Generating...</div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">Waiting Queue</div>
       <p style="font-size:0.82rem;font-weight:500;color:var(--muted);margin-bottom:14px;letter-spacing:0.01em;">Players sorted by longest wait. First in line gets the next court spot.</p>
@@ -964,6 +990,13 @@ input:focus, textarea:focus { border-color: var(--army); }
 
   <!-- RANKINGS TAB -->
   <div class="tab-panel" id="tab-rankings">
+    <div class="share-card compact" id="shareCardRankings" style="display:none;">
+      <div class="qr-box"><div id="qrContainerRankings"></div></div>
+      <div class="share-compact-body">
+        <div class="share-card-title">Scan to view live</div>
+        <div class="share-link-box" id="shareLinkDisplayRankings" onclick="copyViewLink()">Generating...</div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">Leaderboard</div>
       <div class="sort-pills">
@@ -1220,7 +1253,7 @@ window._fbHandleNull = function() {
   bar.classList.add('hidden'); bar.classList.remove('ended');
   document.getElementById('sessionClock').textContent = '00:00:00';
   document.getElementById('sessionStartCard').style.display = '';
-  document.getElementById('shareCard').style.display = 'none';
+  if (window.hideShareCards) hideShareCards(); else document.getElementById('shareCard').style.display = 'none';
   const now = new Date();
   document.getElementById('eventDate').value = now.toISOString().slice(0,10);
   document.getElementById('eventTime').value = now.toTimeString().slice(0,5);
@@ -1674,7 +1707,7 @@ function renderCourts() {
     }
     const teamHtml=(tp,tk,label)=>`<div class="team"><div class="team-label">${label}</div>${tp.map((p,i)=>`
       <div class="team-player-row">
-        <span class="mini-avatar" style="background:${avatarColor(p?.name||'?')}">${initials(p?.name||'?')}</span>
+        <span class="player-bullet"></span>
         <span class="team-player-name">${p?.name||'?'}</span>
         <button class="swap-btn" onclick="openSwapModal(${def.id},'${tk}',${i})" title="Swap player">⇄</button>
       </div>`).join('')}</div>`;
@@ -1985,31 +2018,45 @@ console.log('Firebase session:', _SESSION_ID);
 <!-- QR Code library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-let _qrInstance = null;
+// QR targets across every tab: Players (full card) + Courts/Queue/Rankings (compact)
+const _QR_TARGETS = [
+  { card: 'shareCard',          link: 'shareLinkDisplay',          qr: 'qrContainer',          size: 160 },
+  { card: 'shareCardCourts',    link: 'shareLinkDisplayCourts',    qr: 'qrContainerCourts',    size: 104 },
+  { card: 'shareCardQueue',     link: 'shareLinkDisplayQueue',     qr: 'qrContainerQueue',     size: 104 },
+  { card: 'shareCardRankings',  link: 'shareLinkDisplayRankings',  qr: 'qrContainerRankings',  size: 104 },
+];
+const _qrInstances = {};
 function showShareCard(url) {
-  const card = document.getElementById('shareCard');
-  const display = document.getElementById('shareLinkDisplay');
-  if (!card || !display) return;
-  card.style.display = '';
-  display.textContent = url;
+  _QR_TARGETS.forEach(t => {
+    const card = document.getElementById(t.card);
+    const display = document.getElementById(t.link);
+    if (card) card.style.display = '';
+    if (display) display.textContent = url;
+  });
   _genQR(url);
+}
+function hideShareCards() {
+  _QR_TARGETS.forEach(t => {
+    const card = document.getElementById(t.card);
+    if (card) card.style.display = 'none';
+  });
 }
 function _genQR(url) {
   if (!window.QRCode) { setTimeout(() => _genQR(url), 300); return; }
-  const el = document.getElementById('qrContainer');
-  if (!el) return;
-  if (_qrInstance) {
-    try { _qrInstance.makeCode(url); } catch(e) {
-      _qrInstance = null; el.innerHTML = ''; _genQR(url);
+  _QR_TARGETS.forEach(t => {
+    const el = document.getElementById(t.qr);
+    if (!el) return;
+    if (_qrInstances[t.qr]) {
+      try { _qrInstances[t.qr].makeCode(url); return; }
+      catch(e) { _qrInstances[t.qr] = null; el.innerHTML = ''; }
     }
-  } else {
     el.innerHTML = '';
-    _qrInstance = new QRCode(el, {
-      text: url, width: 160, height: 160,
+    _qrInstances[t.qr] = new QRCode(el, {
+      text: url, width: t.size, height: t.size,
       colorDark: '#1C1F14', colorLight: '#FFFFFF',
       correctLevel: QRCode.CorrectLevel.M
     });
-  }
+  });
 }
 </script>
 </body>

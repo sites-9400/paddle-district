@@ -44,7 +44,10 @@ input:focus{border-color:var(--army);}
 .session-card.session-live:hover{border-color:var(--army);}
 .session-icon{width:42px;height:42px;border-radius:8px;background:var(--army-pale);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
 .session-info{flex:1;min-width:0;}
-.session-name{font-weight:700;font-size:0.9rem;letter-spacing:0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.session-name-row{display:flex;align-items:center;gap:8px;min-width:0;}
+.session-name-row .badge{flex-shrink:0;}
+.session-name{font-weight:700;font-size:0.9rem;letter-spacing:0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.session-card .btn-sm svg{width:15px;height:15px;}
 .session-meta{font-size:0.75rem;font-weight:500;color:var(--muted);margin-top:2px;letter-spacing:0.01em;}
 .session-actions{display:flex;gap:6px;flex-shrink:0;}
 .live-dot{width:8px;height:8px;border-radius:50%;background:#8FB339;animation:blink 2s infinite;flex-shrink:0;}
@@ -294,18 +297,22 @@ function sessionCard(id, s) {
   ].join('');
   const liveHint = isLive ? '<div style="font-size:0.72rem;font-weight:700;color:var(--army);margin-top:3px;">⚡ Tap to manage</div>' : '';
   const viewHref = basePath + 'view.html?session=' + id;
+  const eyeSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const trashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
   return `<div class="session-card ${isLive?'session-live':''}" data-id="${id}" onclick="openSession(this.dataset.id)">
     <div class="session-icon">${isLive ? '🟢' : '📋'}</div>
     <div class="session-info">
-      <div class="session-name">${s.name||'Open Play'}</div>
+      <div class="session-name-row">
+        <span class="session-name">${s.name||'Open Play'}</span>
+        <span class="badge ${isLive?'badge-live':'badge-ended'}">${isLive?'Live':'Ended'}</span>
+      </div>
       <div class="session-meta">${meta}</div>
       ${liveHint}
     </div>
     <div class="session-actions" onclick="event.stopPropagation()">
-      <a href="${viewHref}" target="_blank" class="btn btn-outline btn-sm">👁 View</a>
-      <button class="btn btn-outline btn-sm" onclick="promptDelete('${id}')">🗑</button>
+      <a href="${viewHref}" target="_blank" class="btn btn-outline btn-sm" title="Open live view">${eyeSvg} View</a>
+      <button class="btn btn-outline btn-sm" onclick="promptDelete('${id}')" title="Delete session" aria-label="Delete session">${trashSvg}</button>
     </div>
-    <span class="badge ${isLive?'badge-live':'badge-ended'}">${isLive?'Live':'Ended'}</span>
   </div>`;
 }
 

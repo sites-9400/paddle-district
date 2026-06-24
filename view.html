@@ -21,22 +21,30 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .session-clock-view{font-weight:800;font-size:1rem;letter-spacing:0.06em;background:rgba(0,0,0,0.2);padding:4px 12px;border-radius:20px;}
 .theme-toggle{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 10px;color:white;font-size:1rem;cursor:pointer;flex-shrink:0;}
-.container{max-width:680px;margin:0 auto;padding:0 16px;}
+.view-qr{position:fixed;right:14px;bottom:14px;z-index:30;display:none;flex-direction:column;align-items:flex-end;gap:8px;}
+.view-qr-btn{background:var(--army);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:var(--font);font-size:0.78rem;font-weight:800;letter-spacing:0.04em;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.22);}
+.view-qr-panel{display:none;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,0.22);flex-direction:column;align-items:center;gap:6px;}
+.view-qr.open .view-qr-panel{display:flex;}
+.view-qr-panel .qr-box{background:#fff;border-radius:6px;padding:6px;line-height:0;}
+.view-qr-label{color:var(--muted);font-size:0.55rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;text-align:center;max-width:128px;line-height:1.3;}
+@media(max-width:720px){.view-qr{display:none!important;}}
+.container{max-width:1080px;margin:0 auto;padding:0 16px;}
 .section-header{font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin:20px 0 10px;}
-.court-grid{display:flex;flex-direction:column;gap:14px;}
+.court-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;}
 .court-view{background:var(--surface);border-radius:12px;overflow:hidden;border:1.5px solid var(--line);}
 .court-view-header{background:var(--army);color:white;padding:10px 16px;display:flex;align-items:center;gap:10px;}
-.court-view-name{font-size:1rem;font-weight:800;letter-spacing:0.03em;flex:1;}
+.court-view-name{font-size:1.3rem;font-weight:800;letter-spacing:0.03em;flex:1;}
 .court-view-timer{font-weight:800;font-size:0.9rem;letter-spacing:0.08em;background:rgba(0,0,0,0.22);padding:3px 12px;border-radius:20px;}
 .court-view-timer.warn{background:rgba(212,160,23,0.4);color:#FFE066;}
 .court-view-round{font-size:0.7rem;font-weight:600;opacity:0.7;letter-spacing:0.04em;}
 .court-view-body{padding:14px 16px;}
 .match-view{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;}
-.team-view{background:var(--surface2);border-radius:8px;padding:10px;text-align:center;}
+.team-view{background:var(--surface2);border-radius:8px;padding:10px;text-align:center;min-width:0;}
 .team-view-label{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:6px;}
-.player-chip{display:flex;align-items:center;gap:6px;justify-content:center;margin:3px 0;}
+.player-chip{display:flex;align-items:center;gap:6px;justify-content:center;margin:3px 0;min-width:0;}
+.player-bullet-v{width:7px;height:7px;border-radius:50%;background:var(--army-light);flex-shrink:0;}
 .player-chip-avatar{width:24px;height:24px;border-radius:50%;color:white;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
-.player-chip-name{font-size:0.82rem;font-weight:600;color:var(--ink);}
+.player-chip-name{font-size:1.02rem;font-weight:600;color:var(--ink);min-width:0;overflow-wrap:break-word;}
 .vs-view{font-size:0.85rem;font-weight:900;color:var(--muted);letter-spacing:0.06em;text-align:center;}
 .court-idle-view{background:var(--surface);border-radius:12px;overflow:hidden;border:1.5px dashed var(--line);}
 .court-idle-body{padding:16px;text-align:center;color:var(--muted);font-size:0.82rem;font-weight:500;letter-spacing:0.01em;}
@@ -114,6 +122,14 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
   <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀️</button>
 </header>
 
+<div class="view-qr" id="viewQr">
+  <div class="view-qr-panel">
+    <div class="qr-box"><div id="viewQrContainer"></div></div>
+    <div class="view-qr-label">Scan to view on your phone</div>
+  </div>
+  <button class="view-qr-btn" id="viewQrBtn" onclick="toggleViewQR()">⛶ QR</button>
+</div>
+
 <div class="container" id="mainContent">
   <div class="connecting" id="connectingScreen">
     <div class="spinner"></div>
@@ -121,6 +137,8 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
   </div>
 </div>
 
+<!-- QR Code library (global, loaded before the module) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
@@ -198,6 +216,7 @@ function toggleTheme() {
   document.getElementById('themeBtn').textContent=isDark?'☀️':'🌙';
   localStorage.setItem('pb_view_theme',isDark?'light':'dark');
 }
+window.toggleTheme=toggleTheme;
 (function loadTheme(){
   const saved=localStorage.getItem('pb_view_theme')||'dark';
   document.documentElement.setAttribute('data-theme',saved);
@@ -340,12 +359,26 @@ function ensureLayout() {
     </div>`;
 }
 
+// Balance the court grid so rows are even (4 -> 2x2, 6 -> 3x2, 3 -> 3 across),
+// capped by how many ~340px columns actually fit the screen.
+function balanceCourtGrid(n) {
+  const el=document.getElementById('vCourts');
+  if(!el) return;
+  if(n<=1){ el.style.gridTemplateColumns='minmax(0,1fr)'; return; }
+  const fitByWidth=Math.max(1, Math.floor((el.clientWidth+14)/(340+14)));
+  const desired = n<=3 ? n : Math.ceil(Math.sqrt(n));
+  const cols=Math.max(1, Math.min(desired, fitByWidth));
+  el.style.gridTemplateColumns=`repeat(${cols}, minmax(0,1fr))`;
+}
+window.addEventListener('resize', () => { if(state) balanceCourtGrid((state.courtDefs||[]).length); });
+
 function renderCourts(s) {
   const el=document.getElementById('vCourts');
   if(!el) return;
   const defs=s.courtDefs||[], courts=s.courts||[], players=s.players||[];
   const getP=id=>players.find(p=>p.id===id);
   if(!defs.length){el.innerHTML='<div class="empty-v"><div class="icon">🏸</div>No courts set up yet.</div>';return;}
+  balanceCourtGrid(defs.length);
   el.innerHTML=defs.map(def=>{
     const c=courts.find(ct=>ct.id===def.id);
     const hdr=`<div class="court-view-header">
@@ -368,7 +401,7 @@ function renderCourts(s) {
     }
     const teamView=(tp,label)=>`<div class="team-view">
       <div class="team-view-label">${label}</div>
-      ${tp.map(p=>`<div class="player-chip"><span class="player-chip-avatar" style="background:${avatarColor(p?.name||'?')}">${initials(p?.name||'?')}</span><span class="player-chip-name">${p?.name||'?'}</span></div>`).join('')}
+      ${tp.map(p=>`<div class="player-chip"><span class="player-bullet-v"></span><span class="player-chip-name">${p?.name||'?'}</span></div>`).join('')}
     </div>`;
     const nextUpV = (mq) => {
       if (!mq || !mq.length) return '';
@@ -463,6 +496,26 @@ const _urlParams = new URLSearchParams(window.location.search);
 const _SESSION_ID = _urlParams.get('session');
 if (!_SESSION_ID) {
   document.getElementById('mainContent').innerHTML = '<div class="no-session"><div class="icon">⚠️</div><h2>No Session Found</h2><p>This link is missing a session ID. Ask the organizer for the correct link.</p></div>';
+} else {
+  // Small "⛶ QR" button that expands a QR of THIS live-view URL on demand,
+  // so people watching the projector can pull it up on their phone.
+  window.toggleViewQR = function() {
+    const wrap = document.getElementById('viewQr');
+    if (!wrap) return;
+    const open = wrap.classList.toggle('open');
+    const btn = document.getElementById('viewQrBtn');
+    if (btn) btn.textContent = open ? '✕ Hide' : '⛶ QR';
+  };
+  (function genViewQR(){
+    if (!window.QRCode) { setTimeout(genViewQR, 300); return; }
+    const wrap = document.getElementById('viewQr');
+    const box = document.getElementById('viewQrContainer');
+    if (!wrap || !box) return;
+    box.innerHTML = '';
+    new QRCode(box, { text: window.location.href, width: 120, height: 120,
+      colorDark:'#1C1F14', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
+    wrap.style.display = 'flex';
+  })();
 }
 const _sessionPath = _SESSION_ID ? `sessions/${_SESSION_ID}` : 'sessions/_invalid_';
 
