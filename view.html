@@ -30,7 +30,7 @@ header{background:var(--army);color:#fff;padding:14px 20px;display:flex;align-it
 @media(max-width:720px){.view-qr{display:none!important;}}
 .container{max-width:1080px;margin:0 auto;padding:0 16px;}
 .section-header{font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin:20px 0 10px;}
-.court-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;}
+.court-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,520px));gap:14px;justify-content:center;}
 .court-view{background:var(--surface);border-radius:12px;overflow:hidden;border:1.5px solid var(--line);}
 .court-view-header{background:var(--army);color:white;padding:10px 16px;display:flex;align-items:center;gap:10px;}
 .court-view-name{font-size:1.3rem;font-weight:800;letter-spacing:0.03em;flex:1;}
@@ -384,11 +384,11 @@ function ensureLayout() {
 function balanceCourtGrid(n) {
   const el=document.getElementById('vCourts');
   if(!el) return;
-  if(n<=1){ el.style.gridTemplateColumns='minmax(0,1fr)'; return; }
+  if(n<=1){ el.style.gridTemplateColumns='minmax(0,520px)'; return; }
   const fitByWidth=Math.max(1, Math.floor((el.clientWidth+14)/(340+14)));
   const desired = n<=3 ? n : Math.ceil(Math.sqrt(n));
   const cols=Math.max(1, Math.min(desired, fitByWidth));
-  el.style.gridTemplateColumns=`repeat(${cols}, minmax(0,1fr))`;
+  el.style.gridTemplateColumns=`repeat(${cols}, minmax(0,520px))`;
 }
 window.addEventListener('resize', () => { if(state) balanceCourtGrid((state.courtDefs||[]).length); });
 
