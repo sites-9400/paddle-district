@@ -1702,11 +1702,8 @@ function togglePresent(id) {
 }
 function removePlayer(id) {
   const p=getPlayer(id);
-  const inMatch=courts.find(c=>!c.submitted&&(c.team1.includes(id)||c.team2.includes(id)));
-  if(inMatch){
-    if(!confirm(`${p.name} is in an active match on ${inMatch.name||'a court'}. Remove anyway?`)) return;
-    courts.forEach(c=>{c.team1=c.team1.filter(pid=>pid!==id);c.team2=c.team2.filter(pid=>pid!==id);});
-  }
+  if(!confirm(`Delete ${p?.name||'this player'} permanently? This removes their stats. To keep them for later, tap "Here" to put them on hold instead.`)) return;
+  courts.forEach(c=>{c.team1=c.team1.filter(pid=>pid!==id);c.team2=c.team2.filter(pid=>pid!==id);});
   // Remove from matchQueue
   matchQueue=matchQueue.filter(m=>!m.team1.includes(id)&&!m.team2.includes(id));
   players=players.filter(pl=>pl.id!==id);
@@ -1734,8 +1731,8 @@ function renderPlayers() {
       <div class="player-avatar" style="background:${avatarColor(p.name)}">${initials(p.name)}</div>
       <span class="player-name">${p.name}</span>
       <div class="status-dot ${p.present?'present':''}"></div>
-      <button class="attendance-toggle ${p.present?'here':''}" onclick="togglePresent(${p.id})">${p.present?'Here ✓':'Absent'}</button>
-      <button class="remove-btn" onclick="removePlayer(${p.id})">✕</button>
+      <button class="attendance-toggle ${p.present?'here':''}" onclick="togglePresent(${p.id})" title="${p.present?'On court - tap to put on hold':'On hold - tap to add back to queue'}">${p.present?'Here ✓':'Add to queue'}</button>
+      <button class="remove-btn" onclick="removePlayer(${p.id})" title="Delete permanently">🗑</button>
     </div>`).join('');
 }
 
@@ -1989,8 +1986,7 @@ function cancelMatch(courtId) {
   const optStyle = 'font-size:0.85rem;font-weight:600;display:flex;gap:6px;align-items:flex-start;';
   document.getElementById('cancelOptions').innerHTML = `
     <label style="${optStyle}"><input type="radio" name="cancelFate" value="queue" checked> This match only (players go back to the waiting queue)</label>
-    <label style="${optStyle}"><input type="radio" name="cancelFate" value="bench"> Take players out of the queue (sit out, stay in session)</label>
-    <label style="${optStyle}"><input type="radio" name="cancelFate" value="remove"> Remove players from the session</label>`;
+    <label style="${optStyle}"><input type="radio" name="cancelFate" value="bench"> Put players on hold (keep in session, off the queue)</label>`;
   document.getElementById('cancelOverlay').classList.remove('hidden');
 }
 function closeCancelModal(e) {
@@ -2005,11 +2001,7 @@ function confirmCancel() {
   if (!c) { closeCancelModal(); return; }
   const fate = (document.querySelector('input[name="cancelFate"]:checked')?.value) || 'queue';
   const ids = [...c.team1, ...c.team2];
-  if (fate === 'remove') {
-    players = players.filter(pl => !ids.includes(pl.id));
-    queueOrder = queueOrder.filter(q => !ids.includes(q));
-    matchQueue = matchQueue.filter(m => ![...m.team1, ...m.team2].some(id => ids.includes(id)));
-  } else if (fate === 'bench') {
+  if (fate === 'bench') { // put on hold
     ids.forEach(id => { const p = getPlayer(id); if (p) p.present = false; });
     queueOrder = queueOrder.filter(q => !ids.includes(q));
   } else { // queue
