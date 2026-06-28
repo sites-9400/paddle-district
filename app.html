@@ -1075,6 +1075,7 @@ input:focus, textarea:focus { border-color: var(--army); }
       </div>
       <button class="btn btn-full btn-primary" id="checkinToggleBtn" onclick="toggleCheckinOpen()">Check-in: Open</button>
       <div id="checkinStatus" style="text-align:center;font-size:0.78rem;font-weight:600;color:var(--muted);margin-top:8px;">Players can check in now.</div>
+      <div id="checkinPending"></div>
     </div>
 
     <div class="card">
@@ -1280,6 +1281,7 @@ let courtIdCounter = 0;
 let mqIdCounter = 0;
 let queueOrder = [];
 let checkinOpen = true;
+let pendingCheckins = {};
 let rankSort = 'wins';
 let swapContext = null;
 let sessionStartTime = null;
@@ -1356,16 +1358,36 @@ function _importCheckin(key, entry) {
     if (!queueOrder.includes(ex.id)) queueOrder.push(ex.id);
     rebuildMatchQueue(); renderPlayers(); renderQueue(); saveState();
     showToast(`${ex.name} marked here.`);
-  } else {
-    const p = { id: ++playerIdCounter, name, present: true, gamesPlayed: 0, wins: 0, losses: 0, points: 0, pointsAgainst: 0, lastPlayedRound: -1 };
-    players.push(p);
-    if (!queueOrder.includes(p.id)) queueOrder.push(p.id);
-    rebuildMatchQueue(); renderPlayers(); renderQueue(); saveState();
-    showToast(`${p.name} checked in.`);
+    window._removeCheckin && window._removeCheckin(key);
+    return;
   }
-  window._removeCheckin && window._removeCheckin(key);
+  // Not on the roster -> hold for admin approval (do not add or delete yet)
+  pendingCheckins[key] = { name };
+  renderCheckinPanel();
+  showToast(`${name} wants to check in - needs approval.`);
 }
 window._importCheckin = _importCheckin;
+function approveCheckin(key) {
+  const e = pendingCheckins[key]; if (!e) return;
+  const ex = players.find(p => p && typeof p.name === 'string' && p.name.toLowerCase() === e.name.toLowerCase());
+  if (ex) { ex.present = true; if (!queueOrder.includes(ex.id)) queueOrder.push(ex.id); }
+  else {
+    const p = { id: ++playerIdCounter, name: e.name, present: true, gamesPlayed: 0, wins: 0, losses: 0, points: 0, pointsAgainst: 0, lastPlayedRound: -1 };
+    players.push(p);
+    if (!queueOrder.includes(p.id)) queueOrder.push(p.id);
+  }
+  delete pendingCheckins[key];
+  window._removeCheckin && window._removeCheckin(key);
+  rebuildMatchQueue(); renderPlayers(); renderQueue(); renderCheckinPanel(); saveState();
+  showToast(`${e.name} approved.`);
+}
+function rejectCheckin(key) {
+  const e = pendingCheckins[key]; if (!e) return;
+  delete pendingCheckins[key];
+  window._removeCheckin && window._removeCheckin(key);
+  renderCheckinPanel();
+  showToast(`${e.name} declined.`);
+}
 function toggleCheckinOpen() {
   checkinOpen = !checkinOpen;
   renderCheckinPanel();
@@ -1390,6 +1412,14 @@ function renderCheckinPanel() {
     if (el.dataset.qrUrl !== url) { el.innerHTML = ''; new QRCode(el, { text: url, width: 132, height: 132, colorDark: '#1C1F14', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M }); el.dataset.qrUrl = url; }
   } else if (url && el && !window.QRCode) {
     setTimeout(renderCheckinPanel, 300);
+  }
+  const pendEl = document.getElementById('checkinPending');
+  if (pendEl) {
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const pend = Object.entries(pendingCheckins);
+    pendEl.innerHTML = pend.length
+      ? `<div style="margin-top:12px;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Pending approval</div>` + pend.map(([k,e]) => `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);"><span style="flex:1;min-width:0;font-weight:700;">${esc(e.name)} <span style="font-size:0.6rem;font-weight:800;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;">not on the list</span></span><button onclick="approveCheckin('${k}')" style="font-size:0.72rem;font-weight:700;padding:5px 11px;border-radius:6px;border:none;background:var(--army);color:#fff;cursor:pointer;">Approve</button><button onclick="rejectCheckin('${k}')" style="font-size:0.72rem;font-weight:700;padding:5px 11px;border-radius:6px;border:1.5px solid var(--line);background:none;color:var(--muted);cursor:pointer;">Reject</button></div>`).join('')
+      : '';
   }
 }
 function saveState() {
