@@ -1057,15 +1057,18 @@ input:focus, textarea:focus { border-color: var(--army); }
 
     <div class="card">
       <div class="card-title">Player check-in</div>
-      <div style="display:flex;justify-content:center;margin-bottom:10px;">
-        <div style="background:white;border-radius:10px;padding:8px;line-height:0;display:inline-block;">
-          <div id="checkinQr"></div>
+      <div id="checkinQrWrap" style="display:none;">
+        <div style="display:flex;justify-content:center;margin-bottom:10px;">
+          <div style="background:white;border-radius:10px;padding:8px;line-height:0;display:inline-block;">
+            <div id="checkinQr"></div>
+          </div>
         </div>
       </div>
       <div class="share-link-label">Check-in Link</div>
       <div class="share-link-box" id="checkinLinkDisplay" onclick="copyCheckinLink()">Generating...</div>
       <div class="share-btns" style="margin-bottom:10px;">
         <button class="share-btn" onclick="copyCheckinLink()">📋 Copy Link</button>
+        <button class="share-btn" onclick="var w=document.getElementById('checkinQrWrap');var sh=w.style.display==='none';w.style.display=sh?'':'none';this.textContent=sh?'Hide QR':'Show QR';">Show QR</button>
       </div>
       <button class="btn btn-full btn-primary" id="checkinToggleBtn" onclick="toggleCheckinOpen()">Check-in: Open</button>
       <div id="checkinStatus" style="text-align:center;font-size:0.78rem;font-weight:600;color:var(--muted);margin-top:8px;">Players can check in now.</div>
@@ -1106,10 +1109,11 @@ input:focus, textarea:focus { border-color: var(--army); }
   <!-- COURTS TAB -->
   <div class="tab-panel" id="tab-courts">
     <div class="share-card compact" id="shareCardCourts" style="display:none;">
-      <div class="qr-box"><div id="qrContainerCourts"></div></div>
+      <div class="qr-box" id="qrBoxCourts" style="display:none;"><div id="qrContainerCourts"></div></div>
       <div class="share-compact-body">
         <div class="share-card-title">Scan to view live</div>
         <div class="share-link-box" id="shareLinkDisplayCourts" onclick="copyViewLink()">Generating...</div>
+        <button class="share-btn" style="margin-top:8px;" onclick="var w=document.getElementById('qrBoxCourts');var sh=w.style.display==='none';w.style.display=sh?'':'none';this.textContent=sh?'Hide QR':'Show QR';">Show QR</button>
       </div>
     </div>
     <div class="card">
@@ -1126,10 +1130,11 @@ input:focus, textarea:focus { border-color: var(--army); }
   <!-- QUEUE TAB -->
   <div class="tab-panel" id="tab-queue">
     <div class="share-card compact" id="shareCardQueue" style="display:none;">
-      <div class="qr-box"><div id="qrContainerQueue"></div></div>
+      <div class="qr-box" id="qrBoxQueue" style="display:none;"><div id="qrContainerQueue"></div></div>
       <div class="share-compact-body">
         <div class="share-card-title">Scan to view live</div>
         <div class="share-link-box" id="shareLinkDisplayQueue" onclick="copyViewLink()">Generating...</div>
+        <button class="share-btn" style="margin-top:8px;" onclick="var w=document.getElementById('qrBoxQueue');var sh=w.style.display==='none';w.style.display=sh?'':'none';this.textContent=sh?'Hide QR':'Show QR';">Show QR</button>
       </div>
     </div>
     <div class="card">
@@ -1144,10 +1149,11 @@ input:focus, textarea:focus { border-color: var(--army); }
   <!-- RANKINGS TAB -->
   <div class="tab-panel" id="tab-rankings">
     <div class="share-card compact" id="shareCardRankings" style="display:none;">
-      <div class="qr-box"><div id="qrContainerRankings"></div></div>
+      <div class="qr-box" id="qrBoxRankings" style="display:none;"><div id="qrContainerRankings"></div></div>
       <div class="share-compact-body">
         <div class="share-card-title">Scan to view live</div>
         <div class="share-link-box" id="shareLinkDisplayRankings" onclick="copyViewLink()">Generating...</div>
+        <button class="share-btn" style="margin-top:8px;" onclick="var w=document.getElementById('qrBoxRankings');var sh=w.style.display==='none';w.style.display=sh?'':'none';this.textContent=sh?'Hide QR':'Show QR';">Show QR</button>
       </div>
     </div>
     <div class="card">
